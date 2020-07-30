@@ -6,18 +6,16 @@ import random
 
 from models import setup_db, Question, Category
 
-QUESTIONS_PER_PAGE = 10
+TOTAL_QUESTIONS_PER_PAGE = 10
 
 
-def paginate_questions(request, selection):
+def paginating_all_questions(request, selection):
     page = request.args.get('page', 1, type=int)
-    start = (page - 1) * QUESTIONS_PER_PAGE
-    end = start + QUESTIONS_PER_PAGE
-
+    start = (page - 1) * TOTAL_QUESTIONS_PER_PAGE
+    end = start + TOTAL_QUESTIONS_PER_PAGE
     questions = [question.format() for question in selection]
-    formatted_questions = questions[start:end]
-
-    return formatted_questions
+    formated_questions = questions[start:end]
+    return formated_questions
 
 
 def create_app(test_config=None):
@@ -44,10 +42,9 @@ def create_app(test_config=None):
     Create an endpoint to handle GET requests for all available categories.
     '''
     @app.route('/categories')
-    def get_categories():
+    def fetching_categories():
         categories = Category.query.all()
         formatted_categories = [category.format() for category in categories]
-
         return jsonify({
           'success': True,
           'categories': formatted_categories,
@@ -67,25 +64,22 @@ def create_app(test_config=None):
     Clicking on the page numbers should update the questions.
     '''
     @app.route('/questions')
-    def get_questions():
+    def fetching_questions():
         questions = Question.query.all()
         categories = Category.query.all()
-
-        formatted_questions = paginate_questions(request, questions)
+        formated_questions = paginating_all_questions(request, questions)
         formatted_categories = [category.format() for category in categories]
         category_items = [(category.id, category.type)
                           for category in categories]
-
-        if (len(formatted_questions) == 0):
+        if (len(formated_questions) == 0):
             abort(404)
-
         return jsonify({
           'success': True,
-          'questions': formatted_questions,
+          'questions': formated_questions,
           'total_questions': len(questions),
           'categories': formatted_categories,
           'current_category': list(set([question['category']
-                                   for question in formatted_questions])),
+                                   for question in formated_questions])),
         })
 
     '''
@@ -97,25 +91,22 @@ def create_app(test_config=None):
     This removal will persist in the database and when you refresh the page.
     '''
     @app.route('/questions/<int:question_id>', methods=['DELETE'])
-    def delete_question(question_id):
+    def remove_question(question_id):
         try:
             question = Question.query.filter(Question.id == question_id)\
               .one_or_none()
-
-            if question is None:
+            if (question is None):
                 abort(404)
             else:
                 question.delete()
                 selection = Question.query.order_by(Question.id).all()
-                current_questions = paginate_questions(request, selection)
-
+                current_questions = paginating_all_questions(request, selection)
             return jsonify({
               'success': True,
               'deleted': question_id,
               'questions': current_questions,
               'total_questions': len(Question.query.all())
             })
-
         except Exception:
             abort(422)
     '''
@@ -129,33 +120,27 @@ def create_app(test_config=None):
     the end of the last page of the questions list in the "List" tab.
     '''
     @app.route('/questions', methods=['POST'])
-    def create_question():
+    def creating_question():
         body = request.get_json()
-
         new_answer = body.get('answer', None)
         new_category = body.get('category', None)
         new_difficulty = body.get('difficulty', None)
         new_question = body.get('question', None)
-
         try:
             question = Question(answer=new_answer, category=new_category,
                                 difficulty=new_difficulty,
                                 question=new_question)
             question.insert()
-
             selection = Question.query.order_by(Question.id).all()
-            current_questions = paginate_questions(request, selection)
-
+            current_questions = paginating_all_questions(request, selection)
             return jsonify({
               'success': True,
               'created': question.id,
               'questions': current_questions,
               'total_questions': len(Question.query.all())
             })
-
         except Exception:
             abort(422)
-
     '''
     @TODO:
     Create a POST endpoint to get questions based on a search term.
@@ -166,34 +151,29 @@ def create_app(test_config=None):
     only question that include that string within their question.
     Try using the word "title" to start.
     '''
-    @app.route('/questions_search', methods=['POST'])
-    def questions_search():
+    @app.route('/searching_questions', methods=['POST'])
+    def searching_questions():
         data = request.get_json()
         term = data['searchTerm']
-
         try:
             questions = Question.query.filter(Question.question
                                               .ilike('%' + term + '%')).all()
-            current_questions = paginate_questions(request, questions)
+            current_questions = paginating_all_questions(request, questions)
             categories = Category.query.order_by(Category.id).all()
             category_items = [(category.id, category.type)
                               for category in categories]
-
             if len(current_questions) == 0:
                 abort(404)
-
             return jsonify({
               'success': True,
               'questions': current_questions,
               'total_questions': len(questions)
             })
-
         except Exception:
             abort(400)
     '''
     @TODO:
     Create a GET endpoint to get questions based on category.
-
     TEST: In the "List" tab / main screen, clicking on one of the
     categories in the left column will cause only questions of that
     category to be shown.
@@ -202,20 +182,16 @@ def create_app(test_config=None):
     def questions_by_category(category_id):
         try:
             questions = Question.query.filter_by(category=str(category_id)).all()
-            current_questions = paginate_questions(request, questions)
-
-            if len(current_questions) == 0:
+            current_questions = paginating_all_questions(request, questions)
+            if (len(current_questions) == 0):
                 abort(404)
-
             return jsonify({
               'success': True,
               'questions': current_questions,
               'total_questions': len(questions)
             })
-
         except Exception:
             abort(422)
-
     '''
     @TODO:
     Create a POST endpoint to get questions to play the quiz.
@@ -227,34 +203,30 @@ def create_app(test_config=None):
     one question at a time is displayed, the user is allowed to answer
     and shown whether they were correct or not.
     '''
-    @app.route('/quizzes', methods=['POST'])
-    def quizzes():
+    @app.route('/quizes', methods=['POST'])
+    def quizes():
         data = request.get_json()
-
         previous_questions = data['previous_questions']
         quiz_category = data['quiz_category']
-
         questions = None
         if quiz_category['type'] == "click":
             questions = Question.query.all()
         else:
             questions = Question.query.filter_by(category=quiz_category['id']).all()
 
-        formatted_questions = [question.format() for question in questions]
-
+        formated_questions = [question.format() for question in questions]
         potential_questions = []
+        for i in formated_questions:
+            if i['id'] not in previous_questions:
+                potential_questions.append(i)
 
-        for q in formatted_questions:
-            if q['id'] not in previous_questions:
-                potential_questions.append(q)
-
-        selected_question = None
-        if len(potential_questions) > 0:
-            selected_question = random.choice(potential_questions)
+        user_selected_question = None
+        if (len(potential_questions) > 0):
+            user_selected_question = random.choice(potential_questions)
 
         return jsonify({
             'success': True,
-            'question': selected_question
+            'question': user_selected_question
          })
 
     '''
@@ -262,6 +234,13 @@ def create_app(test_config=None):
     Create error handlers for all expected errors
     including 404 and 422.
     '''
+    @app.errorhandler(422)
+    def unprocessable_entity(error):
+        return jsonify({
+            "success": False,
+            "error": 422,
+            "message": "Unprocessable"
+        }), 422
     @app.errorhandler(404)
     def not_found(error):
         return jsonify({
@@ -269,7 +248,6 @@ def create_app(test_config=None):
             "error": 404,
             "message": "Resource Not Found"
         }), 404
-
     @app.errorhandler(400)
     def bad_request(error):
         return jsonify({
@@ -278,12 +256,6 @@ def create_app(test_config=None):
             "message": "Bad Request"
         }), 400
 
-    @app.errorhandler(422)
-    def unprocessable_entity(error):
-        return jsonify({
-            "success": False,
-            "error": 422,
-            "message": "Unprocessable"
-        }), 422
+
 
     return app
