@@ -107,7 +107,7 @@ Documentation of the available endpoints.
 
 
 
-#### `DELETE '/questions/<int:question_id>'`
+#### `DELETE '/questions/<int:id>'`
 - Deletes the question selected by `question_id`.
 - Request Arguments: `question_id` (required)
 - Will return a multiple key/value pairs object with the following structure:
@@ -132,7 +132,7 @@ Documentation of the available endpoints.
     - `total_questions`: the number of questions returned.
 
 
-#### `POST '/searching_question'`
+#### `POST '/questions/search'`
 - Returns a set of questions based on a search term.
 - Request Arguments:
     - `searchTerm`: string to search in questions string.
@@ -142,7 +142,7 @@ Documentation of the available endpoints.
     - `total_questions`: the number of questions returned.
 
 
-#### `GET '/categories/<int:category_id>/questions'`
+#### `GET '/categories/<int:id>/questions'`
 - Returns a subset of questions that belong to a specific category.
 - Request Arguments:
     - `category_id`: category id field.
@@ -153,7 +153,7 @@ Documentation of the available endpoints.
 
 
 
-#### `POST '/quizes'`
+#### `POST '/quizzes'`
 - Iteratively executes the game asking questions to player.
 - Request Arguments:
     - `category_id`: question's category id field.
